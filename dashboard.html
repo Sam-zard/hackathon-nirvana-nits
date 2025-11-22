@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIRVANA X · Pokédex Dashboard</title>
+
+    <!-- Futuristic / game-like font -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* -------------------- POKÉMON THEME VARIABLES -------------------- */
+        :root {
+            --bg-dark: #020617;
+            --pokedex-red: #e11d2f;
+            --pokedex-red-dark: #7f0814;
+            --cerulean-blue: #0ea5e9;
+            --poke-yellow: #facc15;
+            --accent-neon: #22d3ee;
+            --panel-bg: rgba(9, 12, 25, 0.96);
+            --text-main: #e5f2ff;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Orbitron', system-ui, sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+
+            /* Pokémon / Pokédex style background */
+            background:
+                    radial-gradient(circle at top left, rgba(225, 29, 47, 0.45), transparent 55%),
+                    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.45), transparent 55%),
+                    radial-gradient(circle at top, #020617 0, #020617 55%, #000 100%);
+        }
+
+        /* Faint pokéball watermark */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: url("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png");
+            background-repeat: repeat;
+            background-size: 120px;
+            opacity: 0.04;
+            z-index: -1;
+        }
+
+        main.main {
+            padding: 20px 60px;
+        }
+
+        @media(max-width: 650px) {
+            main.main {
+                padding: 16px 18px;
+            }
+        }
+
+        /* -------------------- TOP: TRAINER CARD + TITLE -------------------- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            gap: 20px;
+        }
+
+        /* Trainer card area */
+        .trainer-card-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--pokedex-red), var(--pokedex-red-dark));
+            box-shadow:
+                    0 0 0 2px rgba(248, 113, 113, 0.5),
+                    0 14px 40px rgba(0, 0, 0, 0.85);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trainer-card-wrapper::before {
+            /* Pokédex diagonal shine */
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 40%, transparent 100%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+
+        .trainer-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background:
+                    radial-gradient(circle at 30% 20%, #ffffff 0, #d4d4d8 25%, #4b5563 55%, #020617 100%);
+            border: 3px solid #f97316;
+            box-shadow:
+                    0 0 12px rgba(248, 250, 252, 0.9),
+                    0 0 22px rgba(253, 224, 71, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: #111827;
+        }
+
+        .trainer-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            z-index: 1;
+        }
+
+        .trainer-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #fee2e2;
+        }
+
+        .trainer-name {
+            font-size: 1.1rem;
+            letter-spacing: 0.06em;
+        }
+
+        .trainer-id {
+            font-size: 0.75rem;
+            color: #fed7d7;
+        }
+
+        /* Profile actions as Pokéball-style buttons */
+        .profile-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .pill-btn {
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(248, 250, 252, 0.8);
+            background: radial-gradient(circle at top, #fef9c3, #fbbf24 45%, #b45309 100%);
+            color: #111827;
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                    0 0 8px rgba(250, 204, 21, 0.9),
+                    0 0 20px rgba(251, 191, 36, 0.7);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .pill-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -60%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+            transform: skewX(-20deg);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+
+        .pill-btn:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow:
+                    0 0 14px rgba(253, 224, 71, 1),
+                    0 0 30px rgba(251, 191, 36, 0.9);
+            border-color: #fbbf24;
+        }
+
+        .pill-btn:hover::before {
+            left: 120%;
+            opacity: 1;
+        }
+
+        /* Right side: NIRVANA X Pokédex title */
+        .header-title {
+            text-align: right;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+        }
+
+        .header-title .sub {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
+
+        /* Responsive for top bar */
+        @media(max-width: 800px) {
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-title {
+                text-align: left;
+            }
+        }
+
+        /* -------------------- MAIN POKÉDEX PANEL -------------------- */
+        .dashboard-shell {
+            margin-top: 30px;
+            background: var(--panel-bg);
+            border-radius: 22px;
+            padding: 24px 22px 28px;
+            border: 2px solid rgba(148, 163, 184, 0.6);
+            box-shadow:
+                    0 0 0 2px rgba(30, 64, 175, 0.9),
+                    0 26px 70px rgba(15, 23, 42, 0.95),
+                    0 0 40px rgba(59, 130, 246, 0.5);
+            position: relative;
+        }
+
+        /* Red Pokédex strip */
+        .dashboard-shell::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 14px;
+            right: 14px;
+            height: 8px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--pokedex-red-dark), var(--pokedex-red), var(--pokedex-red-dark));
+            box-shadow: 0 0 12px rgba(248, 113, 113, 0.9);
+        }
+
+        /* Small label */
+        .shell-label {
+            position: absolute;
+            top: -14px;
+            left: 26px;
+            background: linear-gradient(135deg, var(--cerulean-blue), #1d4ed8);
+            color: #e5f2ff;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.9);
+        }
+
+        /* -------------------- OPTION GRID / MODULES -------------------- */
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            margin-top: 4px;
+        }
+
+        .section-header-row h2 {
+            margin: 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-muted);
+        }
+
+        .section-header-row span {
+            font-size: 0.7rem;
+            color: var(--cerulean-blue);
+        }
+
+        .list-wrapper {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 1000px) {
+            .list-wrapper {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 650px) {
+            .list-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Neon Pokédex cards */
+        .list-item {
+            background:
+                    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%),
+                    rgba(5, 12, 32, 0.95);
+            border-radius: 18px;
+            padding: 22px 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.25s ease;
+            box-shadow:
+                    0 0 0 1px rgba(15, 23, 42, 1),
+                    0 10px 35px rgba(15, 23, 42, 0.9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .list-item::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .list-item::after {
+            content: "";
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            background: conic-gradient(
+                    from 180deg,
+                    rgba(59, 130, 246, 0.8),
+                    rgba(14, 165, 233, 0.2),
+                    transparent,
+                    transparent,
+                    rgba(59, 130, 246, 0.8),
+                    rgba(14, 165, 233, 0.9)
+            );
+            opacity: 0;
+            filter: blur(14px);
+            z-index: -1;
+            transition: opacity 0.25s ease;
+        }
+
+        .list-item-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .list-item:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow:
+                    0 0 0 1px rgba(56, 189, 248, 0.6),
+                    0 14px 45px rgba(56, 189, 248, 0.35);
+        }
+
+        .list-item:hover::before,
+        .list-item:hover::after {
+            opacity: 1;
+        }
+
+        /* Pokémon icons with glow */
+        .list-item img {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+        }
+
+        .list-item h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .list-item p {
+            margin: 8px 0 0;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* -------------------- FLOATING POKÉGEAR SETTINGS BUTTON -------------------- */
+        .settings-btn {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background:
+                    radial-gradient(circle at 30% 20%, #f9fafb 0, #e5e7eb 30%, #111827 70%, #020617 100%);
+            border: 3px solid var(--cerulean-blue);
+            box-shadow:
+                    0 0 12px rgba(56, 189, 248, 0.9),
+                    0 0 35px rgba(15, 23, 42, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            z-index: 30;
+        }
+
+        .settings-btn span {
+            font-size: 1.6rem;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-2px) rotate(8deg);
+            border-color: var(--accent-neon);
+            box-shadow:
+                    0 0 20px rgba(56, 189, 248, 1),
+                    0 0 50px rgba(56, 189, 248, 0.7);
+        }
+
+        /* -------------------- SLIDING PANEL (RIGHT SIDE POKÉDEX SCREEN) -------------------- */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: flex-end;
+            align-items: stretch;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 40;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Slide-in screen */
+        .side-panel {
+            width: min(430px, 100%);
+            background: linear-gradient(145deg, #020617, #020617 20%, #0b1120 65%, #020617 100%);
+            border-left: 2px solid rgba(148, 163, 184, 0.8);
+            box-shadow:
+                    -12px 0 45px rgba(0, 0, 0, 0.95),
+                    0 0 30px rgba(56, 189, 248, 0.3);
+            transform: translateX(100%);
+            transition: transform 0.35s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Blue glowing circle at top-right of panel */
+        .side-panel::before {
+            content: "";
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 2px solid var(--cerulean-blue);
+            box-shadow:
+                    0 0 20px rgba(56, 189, 248, 0.9),
+                    0 0 60px rgba(56, 189, 248, 0.7);
+            opacity: 0.7;
+        }
+
+        .overlay.active .side-panel {
+            transform: translateX(0);
+        }
+
+        .panel-inner {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            padding: 18px 22px 26px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Panel header */
+        .panel-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .panel-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--cerulean-blue);
+        }
+
+        .panel-close {
+            cursor: pointer;
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            margin: 6px 0 4px;
+        }
+
+        .panel-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Panel content area */
+        .panel-content {
+            margin-top: 16px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Data blocks */
+        .data-block {
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(15, 23, 42, 0.94);
+            border: 1px solid rgba(55, 65, 81, 0.95);
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+
+        .data-block h4 {
+            margin: 0 0 6px;
+            font-size: 0.9rem;
+        }
+
+        /* -------------------- METRICS (HP/XP STYLE BARS) -------------------- */
+        .metrics-chart {
+            margin-top: 16px;
+            border-radius: 16px;
+            padding: 16px 14px 18px;
+            background: radial-gradient(circle at top, rgba(56, 189, 248, 0.2), rgba(15, 23, 42, 1));
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            box-shadow:
+                    0 0 18px rgba(56, 189, 248, 0.8),
+                    0 0 40px rgba(8, 47, 73, 0.9);
+        }
+
+        .metrics-chart h4 {
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+        }
+
+        .hp-row {
+            margin-bottom: 10px;
+        }
+
+        .hp-label {
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .hp-bar-outer {
+            width: 100%;
+            height: 14px;
+            border-radius: 999px;
+            background: #020617;
+            border: 1px solid rgba(148, 163, 184, 0.9);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hp-bar-inner {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #4ade80, #a3e635);
+            box-shadow:
+                    0 0 10px rgba(34, 197, 94, 0.9),
+                    0 0 25px rgba(190, 242, 100, 0.8);
+            transition: width 0.6s ease-out;
+        }
+
+        .hp-bar-inner.low {
+            background: linear-gradient(90deg, #f97316, #facc15);
+            box-shadow:
+                    0 0 10px rgba(249, 115, 22, 0.9),
+                    0 0 25px rgba(250, 204, 21, 0.8);
+        }
+
+        .hp-bar-inner.critical {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            box-shadow:
+                    0 0 10px rgba(239, 68, 68, 0.9),
+                    0 0 25px rgba(248, 113, 113, 0.8);
+        }
+
+        .hp-value {
+            font-size: 0.7rem;
+            margin-top: 2px;
+            color: var(--text-muted);
+        }
+
+        /* Helper text */
+        .helper-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        /* Scrollbar style in panel */
+        .panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .panel-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .panel-content::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.6);
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body>
+<!-- OVERLAPPING LIVE CAMERA BOX -->
+<div id="focusRecorder" style="
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 360px;
+    background: rgba(2, 21, 38, 0.95);
+    border: 2px solid #00d4ff;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 0 30px #00bfff;
+    z-index: 9999;
+    display: none;
+">
+    <h3 style="margin:0; color:#6cd3ff; text-shadow:0 0 10px #00bfff;">Live Focus Recorder</h3>
+
+    <button onclick="startTracking()" style="
+        padding:8px 16px; margin-top:8px;
+        background:#00aaff; border:none; border-radius:6px; color:white; cursor:pointer;">
+        Start
+    </button>
+
+    <button onclick="stopTracking()" style="
+        padding:8px 16px; margin-top:8px;
+        background:#ff4444; border:none; border-radius:6px; color:white; cursor:pointer;">
+        Stop
+    </button>
+
+    <br><br>
+    <video id="video" autoplay playsinline style="
+        width:100%; border-radius:10px; border:2px solid #00d4ff;">
+    </video>
+
+    <div id="logBox" style="
+        margin-top:12px; height:120px; overflow-y:auto;
+        background:rgba(0,40,70,0.6);
+        border:1px solid #00cfff; border-radius:10px;
+        padding:8px; font-size:0.8rem;">
+        Logs:<br>
+    </div>
+</div>
+
+<!-- Toggle Button to open camera -->
+<div onclick="toggleRecorder()" style="
+    position: fixed;
+    right: 20px;
+    bottom: 400px;
+    width: 60px;
+    height: 60px;
+    background: #00c3ff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #00bfff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:10000;">
+    📷
+</div>
+
+<main class="main">
+    <!-- TOP: TRAINER CARD + TITLE -->
+    <div class="top-bar">
+        <!-- Trainer card on left -->
+        <div class="trainer-card-wrapper">
+            <div class="trainer-avatar">
+                <span>A</span>
+            </div>
+            <div class="trainer-info">
+                <div class="trainer-label">Trainer Card</div>
+                <div class="trainer-name">Arnav Anand</div>
+                <div class="trainer-id">Trainer ID: NIRVANA-X-001</div>
+                <div class="profile-actions">
+                    <button class="pill-btn" onclick="openPanel('achievements')">🏅 Badges</button>
+                    <button class="pill-btn" onclick="openPanel('distractions')">⚡ Status</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Title on right -->
+        <div class="header-title">
+            <h1>NIRVANA X</h1>
+            <div class="sub">Pokédex Focus Dashboard</div>
+        </div>
+    </div>
+
+    <!-- MAIN POKÉDEX SHELL -->
+    <div class="dashboard-shell">
+        <div class="shell-label">STUDENT POKÉDEX</div>
+
+        <div class="section-header-row">
+            <h2>PRIMARY MODULES</h2>
+            <span>Tap a module to open Pokédex screen</span>
+        </div>
+
+        <section class="option-list">
+            <div class="list-wrapper">
+
+                <!-- Schedule -->
+                <div class="list-item" onclick="openPanel('schedule')">
+                    <div class="list-item-inner">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/town-map.png" alt="Schedule">
+                        <h4>Schedule</h4>
+                        <p>Plan your route like a regional map.</p>
+                    </div>
+                </div>
+
+                <!-- Tracking Progress -->
+                <div class="list-item" onclick="openPanel('progress')">
+                    <div class="list-item-inner">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/exp-share.png" alt="Progress">
+                        <h4>Progress</h4>
+                        <p>Track how your XP and levels grow.</p>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="list-item" onclick="openPanel('metrics')">
+                    <div class="list-item-inner">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png" alt="Metrics">
+                        <h4>Metrics</h4>
+                        <p>See HP / XP style focus stats.</p>
+                    </div>
+                </div>
+
+                <!-- Distractions -->
+                <div class="list-item" onclick="openPanel('distractions')">
+                    <div class="list-item-inner">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Distractions">
+                        <h4>Distractions</h4>
+                        <p>Log wild distractions that appeared.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- FLOATING POKÉGEAR SETTINGS BUTTON -->
+<div class="settings-btn" onclick="openPanel('settings')">
+    <span>⚙</span>
+</div>
+
+<!-- SLIDING RIGHT PANEL -->
+<div class="overlay" id="overlay" onclick="overlayBackgroundClick(event)">
+    <div class="side-panel">
+        <div class="panel-inner">
+            <div class="panel-top-row">
+                <div class="panel-label" id="panelLabel">MODULE</div>
+                <div class="panel-close" onclick="closePanel()">&times;</div>
+            </div>
+            <div>
+                <div class="panel-title" id="panelTitle"></div>
+                <div class="panel-subtitle" id="panelSubtitle"></div>
+            </div>
+
+            <div class="panel-content" id="panelContent">
+                <!-- JS fills this -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const overlay = document.getElementById('overlay');
+    const panelLabel = document.getElementById('panelLabel');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelSubtitle = document.getElementById('panelSubtitle');
+    const panelContent = document.getElementById('panelContent');
+
+    function openPanel(section) {
+        panelLabel.textContent = 'MODULE · ' + section.toUpperCase();
+        panelContent.innerHTML = '';
+
+        if (section === 'schedule') {
+            panelTitle.textContent = 'Trainer Schedule';
+            panelSubtitle.textContent = 'Plan your day like planning a route across a new region.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Today\'s Route</h4>
+        <p>• 08:00 - 10:00 · Physics Gym (problem practice)<br>
+           • 11:00 - 13:00 · Coding Dojo (C language training)<br>
+           • 15:00 - 17:00 · Hackathon Lab (project work)<br>
+           • 20:00 - 21:00 · PokéCenter (review & healing)</p>
+      </div>
+      <div class="data-block">
+        <h4>Deep Focus Zones</h4>
+        <p>Think of these as tall grass patches where rare progress appears. Keep notifications off in these zones.</p>
+      </div>
+      <p class="helper-text">Later, this schedule can be synced with a real calendar or your focus timer logic.</p>
+    `;
+
+        } else if (section === 'progress') {
+            panelTitle.textContent = 'Trainer Progress';
+            panelSubtitle.textContent = 'XP, streaks and quest-style milestones.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Weekly XP Summary</h4>
+        <p>• Study days: 5 / 7<br>
+           • Focus sessions: 12<br>
+           • Total XP earned: 2,450<br>
+           • Current streak: 4 days</p>
+      </div>
+      <div class="data-block">
+        <h4>Quests Completed</h4>
+        <p>• "C Novice" · Completed basics of C<br>
+           • "Physics Explorer" · 3 assignments cleared<br>
+           • "Prototype Builder" · First hackathon UI ready</p>
+      </div>
+      <p class="helper-text">In your real app, this module will be powered by saved history or backend data instead of static text.</p>
+    `;
+
+        } else if (section === 'metrics') {
+            panelTitle.textContent = 'Focus Metrics';
+            panelSubtitle.textContent = 'HP / XP style bars to show how strong your focus is today.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Battle Stats (Today)</h4>
+        <p>• Deep focus time: 3 hrs 10 mins<br>
+           • Total study time: 5 hrs 25 mins<br>
+           • Average session length: 42 mins<br>
+           • Wild distractions encountered: 6</p>
+      </div>
+
+      <div class="metrics-chart">
+        <h4>HP / XP Overview</h4>
+
+        <div class="hp-row">
+          <div class="hp-label">Focus HP</div>
+          <div class="hp-bar-outer">
+            <div class="hp-bar-inner" data-target="82"></div>
+          </div>
+          <div class="hp-value">82 / 100</div>
+        </div>
+
+        <div class="hp-row">
+          <div class="hp-label">XP Gain</div>
+          <div class="hp-bar-outer">
+            <div class="hp-bar-inner" data-target="68"></div>
+          </div>
+          <div class="hp-value">68 / 100</div>
+        </div>
+
+        <div class="hp-row">
+          <div class="hp-label">Energy</div>
+          <div class="hp-bar-outer">
+            <div class="hp-bar-inner low" data-target="54"></div>
+          </div>
+          <div class="hp-value">54 / 100</div>
+        </div>
+
+        <div class="hp-row">
+          <div class="hp-label">Distraction Damage</div>
+          <div class="hp-bar-outer">
+            <div class="hp-bar-inner critical" data-target="38"></div>
+          </div>
+          <div class="hp-value">38 / 100 (lower is better)</div>
+        </div>
+
+        <p class="helper-text">These numbers are demo values. Later, you can compute them from real data (timers, logs, sensors, etc.).</p>
+      </div>
+    `;
+
+            // Animate HP-style bars
+            setTimeout(() => {
+                const bars = panelContent.querySelectorAll('.hp-bar-inner');
+                bars.forEach(bar => {
+                    const target = bar.getAttribute('data-target') || '0';
+                    bar.style.width = target + '%';
+                });
+            }, 60);
+
+        } else if (section === 'distractions') {
+            panelTitle.textContent = 'Status & Distractions';
+            panelSubtitle.textContent = 'Wild distractions that appeared during today\'s study battles.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Encounter Log</h4>
+        <p>• 09:15 · Phone Notification used <strong>Ping</strong> (10 mins)<br>
+           • 12:20 · YouTube used <strong>Auto-play</strong> (18 mins)<br>
+           • 16:05 · Friend Chat used <strong>Small Talk</strong> (15 mins)<br>
+           • 19:40 · Social Media used <strong>Endless Scroll</strong> (22 mins)</p>
+      </div>
+      <div class="data-block">
+        <h4>Current Status Effects</h4>
+        <p>• Slightly <strong>Distracted</strong> by phone<br>
+           • Mild <strong>Overthinking</strong> about tasks<br>
+           • Needs <strong>Short Break</strong> to reset</p>
+      </div>
+      <p class="helper-text">Your hackathon project can detect these via app usage / browser blocks and automatically record them.</p>
+    `;
+
+        } else if (section === 'achievements') {
+            panelTitle.textContent = 'Badges & Achievements';
+            panelSubtitle.textContent = 'Gym-style badges for your study journey.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Unlocked Badges</h4>
+        <p>• <strong>Focus Badge</strong> · 7-day focus streak<br>
+           • <strong>Code Badge</strong> · Solved 30+ coding problems<br>
+           • <strong>Strategy Badge</strong> · Finished 3 full study plans</p>
+      </div>
+      <div class="data-block">
+        <h4>Current Streaks</h4>
+        <p>• Study streak: 4 days<br>
+           • No phone during deep work: 3 days<br>
+           • Night revision streak: 2 days</p>
+      </div>
+      <p class="helper-text">You can gamify the system by assigning XP and badge unlocks based on your real usage and performance.</p>
+    `;
+
+        } else if (section === 'settings') {
+            panelTitle.textContent = 'PokéGear Settings';
+            panelSubtitle.textContent = 'Adjust your focus modes and notifications.';
+            panelContent.innerHTML = `
+      <div class="data-block">
+        <h4>Focus Modes</h4>
+        <p>• <strong>Standard Mode</strong> · Balanced focus & breaks<br>
+           • <strong>Gym Battle Mode</strong> · Intense deep work (exams / hackathon)<br>
+           • <strong>Recovery Mode</strong> · Light tasks & review</p>
+      </div>
+      <div class="data-block">
+        <h4>Notifications</h4>
+        <p>• Focus session start reminders<br>
+           • Break & hydration reminders<br>
+           • Daily summary at 22:00</p>
+      </div>
+      <p class="helper-text">In the real app, these options will be interactive toggles, but the layout and theme can stay exactly like this.</p>
+    `;
+        }
+
+        overlay.classList.add('active');
+    }
+
+    function closePanel() {
+        overlay.classList.remove('active');
+    }
+
+    function overlayBackgroundClick(event) {
+        if (event.target === overlay) {
+            closePanel();
+        }
+    }
+    let recorderBox = document.getElementById("focusRecorder");
+    let video = document.getElementById("video");
+    let logBox = document.getElementById("logBox");
+
+    let tracking = false;
+    let timer = null;
+
+    // Open/Close the floating recorder
+    function toggleRecorder() {
+        recorderBox.style.display =
+            recorderBox.style.display === "none" ? "block" : "none";
+    }
+
+    // Start camera & tracking
+    async function startTracking() {
+        tracking = true;
+        log("Starting camera...");
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            log("Camera started. Tracking focus...");
+
+            let sec = 0;
+            timer = setInterval(() => {
+                if (!tracking) return;
+
+                sec++;
+                let state = Math.random() > 0.5 ? "FOCUSED" : "DISTRACTED";
+                log(sec + "s → " + state);
+
+            }, 1000);
+
+        } catch (err) {
+            log("Camera error: " + err.message);
+        }
+    }
+
+    // Stop tracking
+    function stopTracking() {
+        tracking = false;
+        clearInterval(timer);
+        log("Tracking stopped.");
+    }
+
+    // logging helper
+    function log(msg) {
+        logBox.innerHTML += msg + "<br>";
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
+]
